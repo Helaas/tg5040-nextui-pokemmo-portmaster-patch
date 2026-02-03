@@ -615,13 +615,16 @@ if [ -f "patch.zip" ]; then
     echo "ERROR: parse_javap.py failed!" >> /tmp/launch_menu.trace
     echo "ERROR: parse_javap.py failed!" >&2
   fi
-  # Verify Launcher.java was generated
-  if [ ! -f "src/auto/org/pokemmo/Launcher.java" ]; then
-    echo "ERROR: src/auto/org/pokemmo/Launcher.java was not generated!" >> /tmp/launch_menu.trace
-    echo "ERROR: src/auto/org/pokemmo/Launcher.java was not generated!" >&2
+  # Verify credential class was generated
+  CRED_CLASS=$(find src/auto/f -name "*.java" -type f | head -n 1)
+  if [ -z "$CRED_CLASS" ]; then
+    echo "ERROR: Credential class was not generated in src/auto/f/" >> /tmp/launch_menu.trace
+    echo "ERROR: Credential class was not generated in src/auto/f/" >&2
+  else
+    echo "Generated credential class: $CRED_CLASS" >> /tmp/launch_menu.trace
   fi
   mkdir -p out
-  # Use find to get all Java files recursively from src/auto (includes src/auto/org/pokemmo/Launcher.java)
+  # Use find to get all Java files recursively from src/auto (includes src/auto/f credential class)
   AUTO_JAVA_FILES=$(find src/auto -name "*.java" 2>/dev/null | tr '\n' ' ')
   echo "Auto-generated Java files: $AUTO_JAVA_FILES" >> /tmp/launch_menu.trace
   echo javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java $AUTO_JAVA_FILES >> /tmp/launch_menu.trace
@@ -633,17 +636,20 @@ if [ -f "patch.zip" ]; then
   cp -rf src/com/* out/com
   echo "Contents of out/ after compilation:" >> /tmp/launch_menu.trace
   ls -R out >> /tmp/launch_menu.trace 2>&1
-  # Verify the Launcher class was compiled
-  if [ ! -f "out/org/pokemmo/Launcher.class" ]; then
-    echo "ERROR: out/org/pokemmo/Launcher.class was not compiled!" >> /tmp/launch_menu.trace
-    echo "ERROR: out/org/pokemmo/Launcher.class was not compiled!" >&2
+  # Verify the credential class was compiled
+  CRED_CLASS_COUNT=$(find out/f -name "*.class" -type f 2>/dev/null | wc -l)
+  if [ "$CRED_CLASS_COUNT" -eq 0 ]; then
+    echo "ERROR: Credential class was not compiled in out/f/" >> /tmp/launch_menu.trace
+    echo "ERROR: Credential class was not compiled in out/f/" >&2
+  else
+    echo "Compiled $CRED_CLASS_COUNT credential class(es) in out/f/" >> /tmp/launch_menu.trace
   fi
   ls -R src
-  echo jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com >> /tmp/launch_menu.trace
-  jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com
-  # Verify the JAR contains the Launcher class
+  echo jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" f -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com >> /tmp/launch_menu.trace
+  jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" f -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com
+  # Verify the JAR contains the credential class
   echo "Verifying loader.jar contents:" >> /tmp/launch_menu.trace
-  unzip -l "$JAR_DIR/loader.jar" | grep -i launcher >> /tmp/launch_menu.trace 2>&1
+  unzip -l "$JAR_DIR/loader.jar" | grep "f/" >> /tmp/launch_menu.trace 2>&1
   rm -rf out
   # Persist JARs to SD card so they survive reboot without re-patching
   mkdir -p "$GAMEDIR/jars"
@@ -727,7 +733,7 @@ FCEOF
   echo "Fontconfig: $FONTCONFIG_FILE -> $FONT_DIR"
 fi
 ENV_VARS="PATH=$PATH JAVA_HOME=$JAVA_HOME XDG_SESSION_TYPE=x11 GAMEDIR=$GAMEDIR"
-CLASS_PATH="-cp $PATCH org.pokemmo.Launcher"
+CLASS_PATH="-cp $PATCH com.pokeemu.client.Client"
 
 echo "PokeMMO        $(cat RELEASE)"
 echo "controlfolder  $controlfolder"
@@ -745,8 +751,8 @@ echo "CLASS_PATH  $CLASS_PATH"
 # Verify JAR files exist and contain expected classes
 echo "Checking JAR files..."
 if [ -f "$JAR_DIR/loader.jar" ]; then
-  echo "loader.jar exists, checking for Launcher class:"
-  unzip -l "$JAR_DIR/loader.jar" | grep -i "org/pokemmo/Launcher" || echo "WARNING: Launcher.class not found in loader.jar!"
+  echo "loader.jar exists, checking for credential class:"
+  unzip -l "$JAR_DIR/loader.jar" | grep "f/" | head -5 || echo "WARNING: No classes in f/ package found in loader.jar!"
 else
   echo "ERROR: $JAR_DIR/loader.jar does not exist!"
 fi
@@ -809,7 +815,7 @@ EOS
   cat > "$RUN_SCRIPT" <<EOF
 #!/bin/sh
 cd "$GAMEDIR"
-env -u WAYLAND_DISPLAY DISPLAY=:0 java $JAVA_OPTS -cp '$PATCH' org.pokemmo.Launcher &
+env -u WAYLAND_DISPLAY DISPLAY=:0 java $JAVA_OPTS $CLASS_PATH &
 app_pid=\$!
 echo "\$app_pid" > "$POWER_APP_PID"
 sleep 0.5
@@ -859,7 +865,7 @@ else
   # Non-Weston environment with cursor fix
   ENV_NON_WESTON="$ENV_VARS CRUSTY_SHOW_CURSOR=1"
   
-  env $ENV_NON_WESTON java $JAVA_OPTS -cp "$PATCH" org.pokemmo.Launcher
+  env $ENV_NON_WESTON java $JAVA_OPTS $CLASS_PATH
 fi
 
 # Stop splash progress after game exits

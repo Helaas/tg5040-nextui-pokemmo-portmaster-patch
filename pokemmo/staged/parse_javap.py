@@ -75,18 +75,19 @@ print("username", field.get("username"))
 print("password", field.get("password"))
 print("auto    ", field.get("auto"))
 
-with open("patch_template/launcher.java", "r") as f:
-    launcher_template = f.read()
+# Generate the credential class replacement (shadows the original in f.jar)
+with open("patch_template/credentials.java", "r") as f:
+    credentials_template = f.read()
 
 try:
-    launcher_patch = launcher_template.format(**field)
+    credentials_patch = credentials_template.format(**field)
     import os
-    os.makedirs("src/auto/org/pokemmo", exist_ok=True)
-    with open("src/auto/org/pokemmo/Launcher.java", "w") as f:
-        f.write(launcher_patch)
-    print("Generated src/auto/org/pokemmo/Launcher.java successfully")
+    os.makedirs("src/auto/f", exist_ok=True)
+    with open("src/auto/f/{class_name}.java".format(**field), "w") as f:
+        f.write(credentials_patch)
+    print(f"Generated src/auto/f/{field.get('class_name')}.java successfully")
 except Exception as e:
-    print(f"ERROR generating Launcher.java: {e}")
+    print(f"ERROR generating credential class: {e}")
     print(f"Available fields: {field}")
     raise  # Re-raise to make the error visible
 
