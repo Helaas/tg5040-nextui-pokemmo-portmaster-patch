@@ -610,13 +610,40 @@ if [ -f "patch.zip" ]; then
   echo "Using interpreter: $PYTHON_CMD" >> /tmp/launch_menu.trace
   $PYTHON_CMD --version >> /tmp/launch_menu.trace
   mkdir -p src/auto
-  $PYTHON_CMD parse_javap.py >> /tmp/launch_menu.trace
-  echo javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java src/auto/*.java >> /tmp/launch_menu.trace
-  javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java src/auto/*.java
+  $PYTHON_CMD parse_javap.py >> /tmp/launch_menu.trace 2>&1
+  if [ $? -ne 0 ]; then
+    echo "ERROR: parse_javap.py failed!" >> /tmp/launch_menu.trace
+    echo "ERROR: parse_javap.py failed!" >&2
+  fi
+  # Verify Launcher.java was generated
+  if [ ! -f "src/auto/org/pokemmo/Launcher.java" ]; then
+    echo "ERROR: src/auto/org/pokemmo/Launcher.java was not generated!" >> /tmp/launch_menu.trace
+    echo "ERROR: src/auto/org/pokemmo/Launcher.java was not generated!" >&2
+  fi
+  mkdir -p out
+  # Use find to get all Java files recursively from src/auto (includes src/auto/org/pokemmo/Launcher.java)
+  AUTO_JAVA_FILES=$(find src/auto -name "*.java" 2>/dev/null | tr '\n' ' ')
+  echo "Auto-generated Java files: $AUTO_JAVA_FILES" >> /tmp/launch_menu.trace
+  echo javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java $AUTO_JAVA_FILES >> /tmp/launch_menu.trace
+  javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java $AUTO_JAVA_FILES 2>> /tmp/launch_menu.trace
+  if [ $? -ne 0 ]; then
+    echo "ERROR: javac compilation failed!" >> /tmp/launch_menu.trace
+    echo "ERROR: javac compilation failed!" >&2
+  fi
   cp -rf src/com/* out/com
+  echo "Contents of out/ after compilation:" >> /tmp/launch_menu.trace
+  ls -R out >> /tmp/launch_menu.trace 2>&1
+  # Verify the Launcher class was compiled
+  if [ ! -f "out/org/pokemmo/Launcher.class" ]; then
+    echo "ERROR: out/org/pokemmo/Launcher.class was not compiled!" >> /tmp/launch_menu.trace
+    echo "ERROR: out/org/pokemmo/Launcher.class was not compiled!" >&2
+  fi
   ls -R src
-  echo jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com -C "$GAMEDIR/out" f >> /tmp/launch_menu.trace
-  jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com -C "$GAMEDIR/out" f
+  echo jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com >> /tmp/launch_menu.trace
+  jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com
+  # Verify the JAR contains the Launcher class
+  echo "Verifying loader.jar contents:" >> /tmp/launch_menu.trace
+  unzip -l "$JAR_DIR/loader.jar" | grep -i launcher >> /tmp/launch_menu.trace 2>&1
   rm -rf out
   # Persist JARs to SD card so they survive reboot without re-patching
   mkdir -p "$GAMEDIR/jars"
@@ -674,6 +701,7 @@ fi
 GPTOKEYB2=$(echo "$GPTOKEYB2" | sed 's/--preserve-env=SDL_GAMECONTROLLERCONFIG_FILE,/&SDL_GAMECONTROLLERCONFIG,/')
 
 COMMAND="$WESTONWRAP headless noop kiosk crusty_glx_gl4es"
+# Note: libs/* uses Java's classpath wildcard syntax (NOT shell glob)
 PATCH="$JAR_DIR/loader.jar:$JAR_DIR/f.jar:libs/*:PokeMMO.exe"
 
 JAVA_OPTS="-Xms128M -Xmx384M -Dorg.lwjgl.util.Debug=true -Dfile.encoding=UTF-8"
@@ -698,8 +726,8 @@ FCEOF
   export FONTCONFIG_FILE=/tmp/pokemmo_fonts.conf
   echo "Fontconfig: $FONTCONFIG_FILE -> $FONT_DIR"
 fi
-ENV_VARS="PATH="$PATH" JAVA_HOME="$JAVA_HOME" XDG_SESSION_TYPE=x11 GAMEDIR="$GAMEDIR""
-CLASS_PATH="-cp "${PATCH}" com.pokeemu.client.Client"
+ENV_VARS="PATH=$PATH JAVA_HOME=$JAVA_HOME XDG_SESSION_TYPE=x11 GAMEDIR=$GAMEDIR"
+CLASS_PATH="-cp $PATCH org.pokemmo.Launcher"
 
 echo "PokeMMO        $(cat RELEASE)"
 echo "controlfolder  $controlfolder"
@@ -713,6 +741,15 @@ echo "GPTOKEYB2   $GPTOKEYB2"
 echo "JAVA_OPTS   $JAVA_OPTS"
 echo "ENV_VARS    $ENV_VARS"
 echo "CLASS_PATH  $CLASS_PATH"
+
+# Verify JAR files exist and contain expected classes
+echo "Checking JAR files..."
+if [ -f "$JAR_DIR/loader.jar" ]; then
+  echo "loader.jar exists, checking for Launcher class:"
+  unzip -l "$JAR_DIR/loader.jar" | grep -i "org/pokemmo/Launcher" || echo "WARNING: Launcher.class not found in loader.jar!"
+else
+  echo "ERROR: $JAR_DIR/loader.jar does not exist!"
+fi
 
 if [ "$westonpack" -eq 1 ]; then 
   # Ensure Weston runtime dir is secure to avoid startup warnings
@@ -772,7 +809,7 @@ EOS
   cat > "$RUN_SCRIPT" <<EOF
 #!/bin/sh
 cd "$GAMEDIR"
-env -u WAYLAND_DISPLAY DISPLAY=:0 java $JAVA_OPTS $CLASS_PATH &
+env -u WAYLAND_DISPLAY DISPLAY=:0 java $JAVA_OPTS -cp '$PATCH' org.pokemmo.Launcher &
 app_pid=\$!
 echo "\$app_pid" > "$POWER_APP_PID"
 sleep 0.5
@@ -822,7 +859,7 @@ else
   # Non-Weston environment with cursor fix
   ENV_NON_WESTON="$ENV_VARS CRUSTY_SHOW_CURSOR=1"
   
-  env $ENV_NON_WESTON java $JAVA_OPTS $CLASS_PATH
+  env $ENV_NON_WESTON java $JAVA_OPTS -cp "$PATCH" org.pokemmo.Launcher
 fi
 
 # Stop splash progress after game exits

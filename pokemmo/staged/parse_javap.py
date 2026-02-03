@@ -75,15 +75,20 @@ print("username", field.get("username"))
 print("password", field.get("password"))
 print("auto    ", field.get("auto"))
 
-with open("patch_template/credentials.java", "r") as f:
-    credentials_template = f.read()
+with open("patch_template/launcher.java", "r") as f:
+    launcher_template = f.read()
 
 try:
-    credentials_patch = credentials_template.format(**field)
-    with open("src/auto/{class_name}.java".format(**field), "w") as f:
-        f.write(credentials_patch)
-except:
-    pass
+    launcher_patch = launcher_template.format(**field)
+    import os
+    os.makedirs("src/auto/org/pokemmo", exist_ok=True)
+    with open("src/auto/org/pokemmo/Launcher.java", "w") as f:
+        f.write(launcher_patch)
+    print("Generated src/auto/org/pokemmo/Launcher.java successfully")
+except Exception as e:
+    print(f"ERROR generating Launcher.java: {e}")
+    print(f"Available fields: {field}")
+    raise  # Re-raise to make the error visible
 
 with open("jamepad.javap.txt", "r") as f:
     jamepad_text = f.read()
@@ -103,6 +108,9 @@ try:
     jamepad_patch = jamepad_template.format(**field)
     with open("src/auto/{class_name}.java".format(**field), "w") as f:
         f.write(jamepad_patch)
-except:
-    pass
+    print(f"Generated src/auto/{field.get('class_name')}.java successfully")
+except Exception as e:
+    print(f"ERROR generating jamepad java file: {e}")
+    print(f"Available fields: {field}")
+    raise  # Re-raise to make the error visible
 
