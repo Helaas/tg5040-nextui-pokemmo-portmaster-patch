@@ -129,6 +129,97 @@ cleanup_udev() {
 }
 trap cleanup_udev EXIT
 
+# ---- NextUI splash progress via show2.elf ----
+SHOW2_BIN="${SYSTEM_PATH:-/mnt/SDCARD/.system/tg5040}/bin/show2.elf"
+SHOW2_FIFO="/tmp/show2.fifo"
+SHOW2_LOGO="${SDCARD_PATH:-/mnt/SDCARD}/.system/res/logo.png"
+SHOW2_PID=""
+SPLASH_WATCHDOG_PID=""
+SPLASH_TAILER_PID=""
+
+splash_send() { [ -p "$SHOW2_FIFO" ] && echo "$1" > "$SHOW2_FIFO"; }
+
+start_splash() {
+  # Kill any lingering show2 from a previous run
+  pkill -f show2.elf 2>/dev/null || true
+  rm -f "$SHOW2_FIFO"
+  sleep 0.1
+
+  if [ ! -x "$SHOW2_BIN" ]; then
+    echo "show2.elf not found, skipping splash"
+    return
+  fi
+
+  LD_LIBRARY_PATH="/usr/trimui/lib:${LD_LIBRARY_PATH}" \
+    "$SHOW2_BIN" --mode=daemon \
+    --image="$SHOW2_LOGO" \
+    --bgcolor=0x000000 \
+    --fontcolor=0xFFFFFF \
+    --text="Launching PokeMMO..." \
+    --logoheight=128 \
+    --progressy=90 &
+  SHOW2_PID=$!
+
+  # Wait for FIFO to appear
+  local _n=0
+  while [ ! -p "$SHOW2_FIFO" ] && [ $_n -lt 40 ]; do
+    sleep 0.05
+    _n=$((_n + 1))
+  done
+
+  splash_send "PROGRESS:-1"
+  splash_send "TEXT:Starting..."
+
+  # Watchdog: hard timeout after 120s
+  (
+    sleep 120
+    echo "PROGRESS:100" > "$SHOW2_FIFO" 2>/dev/null || true
+    echo "TEXT:Launch timed out" > "$SHOW2_FIFO" 2>/dev/null || true
+    sleep 0.5
+    echo "QUIT" > "$SHOW2_FIFO" 2>/dev/null || true
+  ) &
+  SPLASH_WATCHDOG_PID=$!
+
+  # Background log tailer
+  (
+    # Wait for game log to appear
+    while [ ! -f "$GAMEDIR/log.txt" ]; do
+      kill -0 "$SPLASH_WATCHDOG_PID" 2>/dev/null || exit 0
+      sleep 0.2
+    done
+
+    last_pct=-1
+    tail -n 0 -F "$GAMEDIR/log.txt" 2>/dev/null | while IFS= read -r line; do
+      kill -0 "$SPLASH_WATCHDOG_PID" 2>/dev/null || break
+      case "$line" in
+        *"Starting Weston"*)
+          [ $last_pct -lt 5 ] && { splash_send "PROGRESS:5"; splash_send "TEXT:Starting display server..."; last_pct=5; } ;;
+        *"Running your command"*)
+          [ $last_pct -lt 10 ] && { splash_send "PROGRESS:10"; splash_send "TEXT:Launching client..."; last_pct=40; } ;;
+        *"Initialized logger"*)
+          [ $last_pct -lt 20 ] && { splash_send "PROGRESS:50"; splash_send "TEXT:Initializing..."; last_pct=80; } ;;
+        *"Starting PokeMMO Client"*)
+          [ $last_pct -lt 90 ] && { splash_send "PROGRESS:90"; splash_send "TEXT:Starting PokeMMO..."; last_pct=90; } ;;
+        *"Initializing cursor"*)
+          # Xwayland is taking over the display — kill show2 to avoid framebuffer fighting
+          splash_send "QUIT"
+          kill "$SHOW2_PID" 2>/dev/null || true
+          break ;;
+      esac
+    done
+  ) &
+  SPLASH_TAILER_PID=$!
+}
+
+stop_splash() {
+  kill "$SPLASH_TAILER_PID" 2>/dev/null || true
+  kill "$SPLASH_WATCHDOG_PID" 2>/dev/null || true
+  splash_send "QUIT" 2>/dev/null || true
+  sleep 0.2
+  kill "$SHOW2_PID" 2>/dev/null || true
+  rm -f "$SHOW2_FIFO"
+}
+
 if [ "$westonpack" -eq 1 ]; then
 
 # Mount Weston runtime
@@ -281,6 +372,7 @@ if [ -f "$GAMEDIR/controller.map" ]; then
 fi
 
 env_vars=""
+LAUNCH_GAME=0
 
 # Check what was selected
 case $selection in
@@ -313,6 +405,7 @@ case $selection in
         ;;
     2)
         echo "[MENU] PokeMMO"
+        LAUNCH_GAME=1
         cat data/mods/console_mod/dync/theme.xml > data/mods/console_mod/console/theme.xml
 
         client_ui_theme=$(grep -E '^client.ui.theme=' config/main.properties | cut -d'=' -f2)
@@ -325,6 +418,7 @@ case $selection in
         ;;
     3)
         echo "[MENU] PokeMMO Android"
+        LAUNCH_GAME=1
         cat data/mods/console_mod/dync/theme.android.xml > data/mods/console_mod/console/theme.xml
 
         client_ui_theme=$(grep -E '^client.ui.theme=' config/main.properties | cut -d'=' -f2)
@@ -337,6 +431,7 @@ case $selection in
         ;;
     4)
         echo "[MENU] PokeMMO Small"
+        LAUNCH_GAME=1
         cat data/mods/console_mod/dync/theme.small.xml > data/mods/console_mod/console/theme.xml
 
         client_ui_theme=$(grep -E '^client.ui.theme=' config/main.properties | cut -d'=' -f2)
@@ -419,6 +514,7 @@ case $selection in
         ;;
     *)
         echo "[MENU] Unknown option: $selection"
+        LAUNCH_GAME=1
         cat data/mods/console_mod/dync/theme.xml > data/mods/console_mod/console/theme.xml
 
         client_ui_theme=$(grep -E '^client.ui.theme=' config/main.properties | cut -d'=' -f2)
@@ -445,6 +541,11 @@ fi
 
 echo ESUDO=$ESUDO
 echo env_vars=$env_vars
+
+# Start NextUI splash progress for game launches
+if [ "$LAUNCH_GAME" -eq 1 ]; then
+  start_splash
+fi
 
 if [ -f "patch.zip" ]; then
   rm -rf /tmp/launch_menu.trace
@@ -724,6 +825,8 @@ else
   env $ENV_NON_WESTON java $JAVA_OPTS $CLASS_PATH
 fi
 
+# Stop splash progress after game exits
+stop_splash
 
 if [[ "$PM_CAN_MOUNT" != "N" ]]; then
   if [ "$westonpack" -eq 1 ]; then
