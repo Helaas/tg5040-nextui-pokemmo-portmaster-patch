@@ -585,11 +585,6 @@ if [ "$LAUNCH_GAME" -eq 1 ] && [ ! -f "PokeMMO.exe" ]; then
   echo __END__ >> /tmp/launch_menu.trace
 fi
 
-# Start NextUI splash progress for game launches
-if [ "$LAUNCH_GAME" -eq 1 ]; then
-  start_splash
-fi
-
 if [ -f "patch.zip" ]; then
   rm -rf /tmp/launch_menu.trace
   EXTRACT_DIR="/tmp/pokemmo_extract"
@@ -702,6 +697,11 @@ if [ -f "patch.zip" ]; then
   cp "$JAR_DIR/loader.jar" "$GAMEDIR/jars/loader.jar"
   sleep 1
   echo __END__ >> /tmp/launch_menu.trace
+fi
+
+# Start NextUI splash progress for game launches (after patching is complete)
+if [ "$LAUNCH_GAME" -eq 1 ]; then
+  start_splash
 fi
 
 JAR_DIR="/tmp/pokemmo_jars"
