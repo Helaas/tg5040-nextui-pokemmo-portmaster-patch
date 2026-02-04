@@ -75,19 +75,19 @@ print("username", field.get("username"))
 print("password", field.get("password"))
 print("auto    ", field.get("auto"))
 
-# Generate the credential class replacement (shadows the original in f.jar)
-with open("patch_template/credentials.java", "r") as f:
+# Generate a credential javaagent (does not replace the original f/* class)
+with open("patch_template/CredentialsAgent.java", "r") as f:
     credentials_template = f.read()
 
 try:
     credentials_patch = credentials_template.format(**field)
     import os
-    os.makedirs("src/auto/f", exist_ok=True)
-    with open("src/auto/f/{class_name}.java".format(**field), "w") as f:
+    os.makedirs("src/auto/patch", exist_ok=True)
+    with open("src/auto/patch/CredentialsAgent.java", "w") as f:
         f.write(credentials_patch)
-    print(f"Generated src/auto/f/{field.get('class_name')}.java successfully")
+    print("Generated src/auto/patch/CredentialsAgent.java successfully")
 except Exception as e:
-    print(f"ERROR generating credential class: {e}")
+    print(f"ERROR generating credentials agent: {e}")
     print(f"Available fields: {field}")
     raise  # Re-raise to make the error visible
 

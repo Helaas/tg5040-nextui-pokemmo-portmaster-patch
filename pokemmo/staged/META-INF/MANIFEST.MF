@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Premain-Class: patch.CredentialsAgent
+Created-By: 17.0.10 (Azul Systems, Inc.)
+

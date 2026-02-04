@@ -615,16 +615,16 @@ if [ -f "patch.zip" ]; then
     echo "ERROR: parse_javap.py failed!" >> /tmp/launch_menu.trace
     echo "ERROR: parse_javap.py failed!" >&2
   fi
-  # Verify credential class was generated
-  CRED_CLASS=$(find src/auto/f -name "*.java" -type f | head -n 1)
-  if [ -z "$CRED_CLASS" ]; then
-    echo "ERROR: Credential class was not generated in src/auto/f/" >> /tmp/launch_menu.trace
-    echo "ERROR: Credential class was not generated in src/auto/f/" >&2
+  # Verify credentials agent was generated
+  CRED_AGENT_CLASS="src/auto/patch/CredentialsAgent.java"
+  if [ ! -f "$CRED_AGENT_CLASS" ]; then
+    echo "ERROR: Credentials agent was not generated at $CRED_AGENT_CLASS" >> /tmp/launch_menu.trace
+    echo "ERROR: Credentials agent was not generated at $CRED_AGENT_CLASS" >&2
   else
-    echo "Generated credential class: $CRED_CLASS" >> /tmp/launch_menu.trace
+    echo "Generated credentials agent: $CRED_AGENT_CLASS" >> /tmp/launch_menu.trace
   fi
   mkdir -p out
-  # Use find to get all Java files recursively from src/auto (includes src/auto/f credential class)
+  # Use find to get all Java files recursively from src/auto (includes credentials agent)
   AUTO_JAVA_FILES=$(find src/auto -name "*.java" 2>/dev/null | tr '\n' ' ')
   echo "Auto-generated Java files: $AUTO_JAVA_FILES" >> /tmp/launch_menu.trace
   echo javac -d out/ -cp "$JAR_DIR/f.jar:libs/*" src/*.java $AUTO_JAVA_FILES >> /tmp/launch_menu.trace
@@ -636,20 +636,22 @@ if [ -f "patch.zip" ]; then
   cp -rf src/com/* out/com
   echo "Contents of out/ after compilation:" >> /tmp/launch_menu.trace
   ls -R out >> /tmp/launch_menu.trace 2>&1
-  # Verify the credential class was compiled
-  CRED_CLASS_COUNT=$(find out/f -name "*.class" -type f 2>/dev/null | wc -l)
-  if [ "$CRED_CLASS_COUNT" -eq 0 ]; then
-    echo "ERROR: Credential class was not compiled in out/f/" >> /tmp/launch_menu.trace
-    echo "ERROR: Credential class was not compiled in out/f/" >&2
+  # Verify the credentials agent was compiled
+  CRED_AGENT_COUNT=$(find out/patch -name "CredentialsAgent.class" -type f 2>/dev/null | wc -l)
+  if [ "$CRED_AGENT_COUNT" -eq 0 ]; then
+    echo "ERROR: Credentials agent was not compiled in out/patch/" >> /tmp/launch_menu.trace
+    echo "ERROR: Credentials agent was not compiled in out/patch/" >&2
   else
-    echo "Compiled $CRED_CLASS_COUNT credential class(es) in out/f/" >> /tmp/launch_menu.trace
+    echo "Compiled credentials agent in out/patch/" >> /tmp/launch_menu.trace
   fi
   ls -R src
-  echo jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" f -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com >> /tmp/launch_menu.trace
-  jar cf "$JAR_DIR/loader.jar" -C "$GAMEDIR/out" f -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com
-  # Verify the JAR contains the credential class
+  MANIFEST_FILE="/tmp/pokemmo_manifest.mf"
+  printf "Premain-Class: patch.CredentialsAgent\n" > "$MANIFEST_FILE"
+  echo jar cfm "$JAR_DIR/loader.jar" "$MANIFEST_FILE" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com -C "$GAMEDIR/out" patch >> /tmp/launch_menu.trace
+  jar cfm "$JAR_DIR/loader.jar" "$MANIFEST_FILE" -C "$GAMEDIR/out" org -C "$GAMEDIR/out" com -C "$GAMEDIR/out" patch
+  # Verify the JAR contains the credentials agent
   echo "Verifying loader.jar contents:" >> /tmp/launch_menu.trace
-  unzip -l "$JAR_DIR/loader.jar" | grep "f/" >> /tmp/launch_menu.trace 2>&1
+  unzip -l "$JAR_DIR/loader.jar" | grep "patch/CredentialsAgent" >> /tmp/launch_menu.trace 2>&1
   rm -rf out
   # Persist JARs to SD card so they survive reboot without re-patching
   mkdir -p "$GAMEDIR/jars"
@@ -710,7 +712,7 @@ COMMAND="$WESTONWRAP headless noop kiosk crusty_glx_gl4es"
 # Note: libs/* uses Java's classpath wildcard syntax (NOT shell glob)
 PATCH="$JAR_DIR/loader.jar:$JAR_DIR/f.jar:libs/*:PokeMMO.exe"
 
-JAVA_OPTS="-Xms128M -Xmx384M -Dorg.lwjgl.util.Debug=true -Dfile.encoding=UTF-8"
+JAVA_OPTS="-Xms128M -Xmx384M -Dorg.lwjgl.util.Debug=true -Dfile.encoding=UTF-8 -javaagent:$JAR_DIR/loader.jar"
 if [ -d "/tmp/pokemmo_lwjgl" ]; then
   JAVA_OPTS="$JAVA_OPTS -Dorg.lwjgl.librarypath=/tmp/pokemmo_lwjgl"
 fi
@@ -751,8 +753,21 @@ echo "CLASS_PATH  $CLASS_PATH"
 # Verify JAR files exist and contain expected classes
 echo "Checking JAR files..."
 if [ -f "$JAR_DIR/loader.jar" ]; then
-  echo "loader.jar exists, checking for credential class:"
-  unzip -l "$JAR_DIR/loader.jar" | grep "f/" | head -5 || echo "WARNING: No classes in f/ package found in loader.jar!"
+  echo "loader.jar exists, checking for credentials agent:"
+  if ! unzip -l "$JAR_DIR/loader.jar" | grep -q "patch/CredentialsAgent"; then
+    echo "WARNING: Credentials agent not found in loader.jar!"
+    echo "Rebuilding cached JARs to include credentials agent..."
+    rm -f "$JAR_DIR/loader.jar" "$JAR_DIR/f.jar"
+    rm -f "$GAMEDIR/jars/loader.jar" "$GAMEDIR/jars/f.jar"
+    if [ -f "patch_applied.zip" ]; then
+      cp patch_applied.zip patch.zip
+      exec "$0" "$@"
+    else
+      echo "ERROR: patch_applied.zip not found; cannot rebuild loader.jar"
+    fi
+  else
+    unzip -l "$JAR_DIR/loader.jar" | grep "patch/CredentialsAgent" | head -5
+  fi
 else
   echo "ERROR: $JAR_DIR/loader.jar does not exist!"
 fi
