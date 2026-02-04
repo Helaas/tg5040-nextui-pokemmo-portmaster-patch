@@ -132,7 +132,8 @@ trap cleanup_udev EXIT
 # ---- NextUI splash progress via show2.elf ----
 SHOW2_BIN="${SYSTEM_PATH:-/mnt/SDCARD/.system/tg5040}/bin/show2.elf"
 SHOW2_FIFO="/tmp/show2.fifo"
-SHOW2_LOGO="${SDCARD_PATH:-/mnt/SDCARD}/.system/res/logo.png"
+SHOW2_LOGO="$GAMEDIR/menu/NextUI.png"
+echo $SHOW2_LOGO
 SHOW2_PID=""
 SPLASH_WATCHDOG_PID=""
 SPLASH_TAILER_PID=""
@@ -156,7 +157,7 @@ start_splash() {
     --bgcolor=0x000000 \
     --fontcolor=0xFFFFFF \
     --text="Launching PokeMMO..." \
-    --logoheight=128 \
+    --logoheight=256 \
     --progressy=90 &
   SHOW2_PID=$!
 
