@@ -171,9 +171,9 @@ start_splash() {
   splash_send "PROGRESS:-1"
   splash_send "TEXT:Starting..."
 
-  # Watchdog: hard timeout after 120s
+  # Watchdog: hard timeout after 60s
   (
-    sleep 120
+    sleep 60
     echo "PROGRESS:100" > "$SHOW2_FIFO" 2>/dev/null || true
     echo "TEXT:Launch timed out" > "$SHOW2_FIFO" 2>/dev/null || true
     sleep 0.5
@@ -478,6 +478,10 @@ case $selection in
         echo "Generating PATCHES" >> /tmp/launch_menu.trace
         sleep 1
         echo __END__ >> /tmp/launch_menu.trace
+        
+        # Fall through to patch the game (don't exit yet)
+        UPDATE_ONLY=1
+        LAUNCH_GAME=0
         ;;
     6)
         echo "[MENU] PokeMMO Restore"
@@ -542,6 +546,44 @@ fi
 
 echo ESUDO=$ESUDO
 echo env_vars=$env_vars
+
+# Check if game needs to be downloaded before launching
+if [ "$LAUNCH_GAME" -eq 1 ] && [ ! -f "PokeMMO.exe" ]; then
+  echo "Game not found, downloading first..."
+  rm -rf /tmp/launch_menu.trace
+  
+  # Launch progress display, then kill gptokeyb to prevent input interference
+  "$GAMEDIR/menu/launch_menu.$DEVICE_ARCH" "$GAMEDIR/menu/menu.items" "$GAMEDIR/menu/FiraCode-Regular.ttf" --trace &
+  sleep 0.3
+  pkill -9 gptokeyb2 2>/dev/null || true
+
+  # Download missing PortMaster runtimes (WiFi is available at this point)
+  if [ -f "$controlfolder/harbourmaster" ]; then
+    for _rt in "$weston_runtime" "$mesa_runtime" "$java_runtime"; do
+      if [ ! -f "$controlfolder/libs/${_rt}.squashfs" ]; then
+        echo "Downloading runtime: ${_rt}..." > /tmp/launch_menu.trace
+        "$controlfolder/harbourmaster" --quiet --no-check runtime_check "${_rt}.squashfs" || true
+      fi
+    done
+  fi
+
+  if [ ! -f "main.properties" ]; then
+    cp config/main.properties main.properties
+  fi
+  echo "Downloading game..." > /tmp/launch_menu.trace
+  curl -L https://pokemmo.com/download_file/1/ -o _pokemmo.zip 2>> /tmp/launch_menu.trace
+  if [ ! -f "patch.zip" ]; then
+    cp patch_applied.zip patch.zip
+  fi
+  echo "Extracting game..." >> /tmp/launch_menu.trace
+  unzip -o _pokemmo.zip >> /tmp/launch_menu.trace 2>&1
+  rm _pokemmo.zip
+  rm -f PokeMMO.sh
+
+  echo "Preparing to launch..." >> /tmp/launch_menu.trace
+  sleep 1
+  echo __END__ >> /tmp/launch_menu.trace
+fi
 
 # Start NextUI splash progress for game launches
 if [ "$LAUNCH_GAME" -eq 1 ]; then
@@ -674,11 +716,18 @@ fi
 # Fallback: no JARs anywhere but patch was applied — re-patch once to populate persistent storage
 if [ ! -f "$JAR_DIR/loader.jar" ] && [ -f "patch_applied.zip" ] && [ ! -f "patch.zip" ]; then
   echo "No cached JARs found; re-patching once to build persistent cache..."
+  if [ "$LAUNCH_GAME" -eq 1 ]; then
+    splash_send "PROGRESS:0"
+    splash_send "TEXT:Building game cache (first time)..."
+  fi
   cp patch_applied.zip patch.zip
-  exec "$0" "$@"
+  # Force rerun in same shell with updated patch.zip
+  source "$0"
+  exit 0
 fi
 
 if [ ! -f "$JAR_DIR/loader.jar" ]; then
+  stop_splash
   "$GAMEDIR/menu/launch_menu.$DEVICE_ARCH" "$GAMEDIR/menu/menu.items" "$GAMEDIR/menu/FiraCode-Regular.ttf" --show "ERROR: loader.jar"
   sleep 10
   pm_finish
@@ -697,6 +746,13 @@ fi
 # DEBUG INFO
 echo look loader
 unzip -l "$JAR_DIR/loader.jar"
+
+# If this was an update-only operation, show completion and return to menu
+if [ "$UPDATE_ONLY" -eq 1 ]; then
+  "$GAMEDIR/menu/launch_menu.$DEVICE_ARCH" "$GAMEDIR/menu/menu.items" "$GAMEDIR/menu/FiraCode-Regular.ttf" --show "PokeMMO Updated & Patched"
+  # Return to menu by restarting the script
+  exec "$0"
+fi
 
 if [ "$DEVICE_NAME" = "TRIMUI-SMART-PRO" ]; then
   DISPLAY_WIDTH=1280

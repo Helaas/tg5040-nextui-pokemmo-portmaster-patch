@@ -5,3 +5,7 @@
 
 # Ensure PortMaster's expected home directory exists (mod_TrimUI.txt needs it)
 mkdir -p /mnt/SDCARD/Data/home
+rm -f "/mnt/SDCARD/Roms/Ports (PORTS)/.ports/PokeMMO small.sh"
+rm -f "/mnt/SDCARD/Roms/Ports (PORTS)/.ports/PokeMMO Android.sh"
+rm -f "/mnt/SDCARD/Roms/Ports (PORTS)/PokeMMO small.sh"
+rm -f "/mnt/SDCARD/Roms/Ports (PORTS)/PokeMMO Android.sh"
