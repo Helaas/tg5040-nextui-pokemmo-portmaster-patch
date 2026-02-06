@@ -117,6 +117,8 @@ Based on [lowlevel-1989/pokemmo-port](https://github.com/lowlevel-1989/pokemmo-p
 ## Known Issues
 - **Long first launch** -- The first launch of PokeMMO can take up to ~2 minutes before reaching the menu. This is expected behavior while PortMaster performs initial setup and only occurs on the first run.
 - **3D rendering glitches** -- Minor 3D issues may appear, most notably on the login screen. In-game rendering is generally fine and this has no impact on gameplay. This is caused by missing or incomplete driver support.
+- **Mouse cursor moves automatically (Smart Pro)** -- This is usually caused by uncalibrated analog sticks. Reboot the device **without the SD card**, then go to `Settings > System > Calibrate Joystick` and follow the on-screen prompts to rotate both sticks.
+- **Can only move left and right** -- This happens when text mode is still enabled. Press **Select + Y** to exit text mode, then movement in all directions will work normally.
 
 ## Credits
 
