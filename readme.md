@@ -1,32 +1,44 @@
-# PokeMMO Patch for TrimUI Brick (tg5040)
+# PokeMMO Patch for TrimUI Brick (tg3040) & Smart Pro (tg5040)
 
-A patch package that lets you run [PokeMMO](https://pokemmo.com) on the TrimUI Brick handheld via PortMaster.
+Yo dawg, I heard you like [PokeMMO](https://pokemmo.com) PortMaster patches.  
+So I patched the patch with another patch, so you can patch your PokeMMO PortMaster patch while patching your PokeMMO PortMaster patch.  
+
+Why? To run PokeMMO on the TrimUI Brick and TrimUI Smart Pro with [NextUI](https://nextui.loveretro.games/) ≥ 6.7!
 
 ## What it does
 
-This `.pakz` installs a PortMaster-based launcher that downloads, patches, and runs the official PokeMMO client on your device. It handles:
-
-- **Auto-patching** -- On each launch, the script extracts the PokeMMO client, identifies obfuscated class names, generates Java patches, and compiles them into a `loader.jar` that hooks into the game.
-- **Credential storage** -- Enter your username and password once in `credentials.txt`; the patch injects auto-login so you don't need a keyboard at the login screen.
-- **Controller support** -- Maps your gamepad to PokeMMO's controls via gptokeyb2 and a custom Jamepad bridge, with a bundled `controller.map` for the TrimUI Brick.
-- **Display modes** -- A launch menu lets you pick between three UI layouts (see Menu Options below).
-- **Runtime management** -- Automatically downloads required PortMaster runtimes (Weston, Mesa, Java 17) when you select "Update" from the menu.
-- **Update & Restore** -- Menu options to re-download the latest PokeMMO client and to reset configuration or mods to defaults.
-
-## Installation
-
-1. Copy `pokemmo_patch.pakz` to the root of your SD card (`/mnt/SDCARD/`).
-2. Reboot the device. NextUI will extract the patch automatically.
-3. Launch **PokeMMO** from the Ports menu.
-4. On first run, select **Update** to download the PokeMMO client and any missing runtimes (requires WiFi).
-5. Edit `credentials.txt` at `.ports/pokemmo/credentials.txt` with your PokeMMO username and password for auto-login.
+- Brings the original [PortMaster Port](https://github.com/lowlevel-1989/pokemmo-port) port by [lowlevel.1989](https://github.com/lowlevel-1989) to NextUI on the TrimUI Brick and TrimUI Smart Pro.
+- Downloads and sets up the official PokeMMO client automatically
+- Lets you log in without a keyboard by injecting the credentials from a configurable file
+- Adds built-in controller support tuned for the Brick and Smart Pro
+- Offers simple display/layout choices at launch
+- Keeps everything up to date and easy to reset if something breaks
+- Provides library overrides so the Port can actually run on these devices
 
 ## Requirements
 
-- TrimUI Brick (tg5040) running NextUI
-- PortMaster installed
-- WiFi connection for initial setup (client download and runtime fetching)
+- TrimUI Brick (tg3040) or Smart Pro (tg5040) running NextUI 6.7 or higher
+- WiFi connection
 - A PokeMMO account ([pokemmo.com](https://pokemmo.com))
+
+## Installation
+### Part 1: Install PortMaster and PokeMMO
+1. Install PortMaster on your TrimUI Brick or Smart Pro via the Pak Store if you haven't already.
+2. Open PortMaster from the Ports Menu.
+    - Let it perform updates if required.
+3. Navigate to the **All Ports** section.
+4. Select PokeMMO and install it.
+    - Let PortMaster do it's thing.
+### Part 2: Configure credentials, place the roms and install patch
+1. Turn off your device, remove the SD card and plug it into your computer.
+2. Navigate to /mnt/SDCARD/Roms/Ports (PORTS)/.ports/pokemmo
+    - Unhide hidden folders if you can't find the .ports folder.
+3. Rename credentials.template.txt to credentials.txt.
+    - Open credentials.txt and enter your PokeMMO username and password.
+4. Setup the ROMs as described [here](https://github.com/lowlevel-1989/pokemmo-port?tab=readme-ov-file#3-add-required-and-optional-roms).
+5. Copy [pokemmo_patch.pakz](https://github.com/Helaas/tg5040-nextui-pokemmo-portmaster-patch/releases) to the root of your SD card.
+6. Reboot the device. NextUI will extract the patch automatically.
+7. Launch **PokeMMO** from the Ports menu.
 
 ## Menu options
 
@@ -35,80 +47,52 @@ This `.pakz` installs a PortMaster-based launcher that downloads, patches, and r
 | **PokeMMO** | Launch with desktop UI at 1x scale |
 | **PokeMMO Android** | Launch with mobile UI at 1.8x scale |
 | **PokeMMO Small** | Launch with desktop UI at 1.4x scale |
-| **PokeMMO Update** | Download latest client + missing runtimes |
+| **PokeMMO Update** | Download latest client + missing runtimes + apply credentials patch|
 | **PokeMMO Restore** | Reset config and patches to defaults |
 | **PokeMMO Restore Mods** | Reset only the mods folder to defaults |
 
 ## Controls
 
-### Default Mode
-
 | Button | Action |
 |--------|--------|
-| A | Confirm (A) |
-| B | Cancel (B) |
+| Start | Menu Focus |
+| R1 | Mouse Left |
+| L1 | Mouse Right |
+| A | A |
+| B | B |
 | X | Bag |
 | Y | Hotkey 1 |
-| L1 | Right Click |
-| R1 | Left Click |
 | L2 | Hotkey 2 |
 | R2 | Hotkey 3 |
-| L3 (Extra1) | Hotkey 4 |
-| R3 (Extra2) | Hotkey 5 |
-| Start | Game Menu |
-| D-Pad | Arrow Keys |
-| Left Analog | Mouse Movement |
-| Right Analog | Mouse Movement |
-
-> **TrimUI Brick note:** On the Brick, the default mode starts with D-Pad mapped to mouse movement instead of arrow keys. Select+L2 toggles it to arrow keys.
-
-### Select (Hold) + Button Combos
-
-Hold **Select** and press a button to access these functions:
-
-| Combo | Action |
-|-------|--------|
+| F1 | Hotkey 4 (Brick only)|
+| F2 | Hotkey 5 (Brick only)|
 | Select + B | Hotkey 6 |
 | Select + A | Hotkey 7 |
 | Select + X | Hotkey 8 |
 | Select + R1 | Hotkey 9 |
-| Select + R2 | Screenshot (F11) |
-| Select + Y | Toggle Text Input Mode |
-| Select + L2 | Toggle D-Pad Mouse Mode |
+| Select + R2 | Screenshot |
+| Select + L2 | Toggle D-Pad Mouse (Brick: this defaults to On) |
+| Select + Y | Toggle Mode Text (On/Off) |
+| Right thumbstick | Move mouse (Smart Pro only) |
+| Power button | Exit game |
 
-### D-Pad Mouse Mode
+Note: Hotkeys are assigned by right-clicking on any item or element in the game and selecting register.
+Note 2: The Brick's D-Pad defaults to mouse mode, but you can toggle it on/off with Select + L2 after logging in.
 
-Activated via **Select + L2**. D-Pad controls the mouse cursor instead of arrow keys.
-
-| Button | Action |
-|--------|--------|
-| L1 | Right Click |
-| R1 | Left Click |
-| D-Pad | Mouse Movement |
-| Start | Game Menu |
-
-All Select combos remain available (including Select+L2 to toggle back).
-
-### Text Input Mode
-
-Activated via **Select + Y**. Used for typing in chat and text fields.
+### Virtual Keyboard
 
 | Button | Action |
 |--------|--------|
-| D-Pad Up/Down | Cycle through characters |
-| D-Pad Left/Right | Move cursor |
-| A | Add letter |
+| Select + Y | Mode Text (Off) |
+| A | Add Character |
 | B | Backspace |
 | X | Space |
-| Y | Toggle case (abc / ABC) |
-| L1 | Right Click |
-| R1 | Left Click |
-| L2 | Switch charset (letters / numbers) |
-| Right Analog | Mouse Movement |
-| Start | Submit text and exit |
-| Select + Y | Cancel text and exit |
+| Y | Toggle Case |
+| Up | Prev Character |
+| Down | Next Character |
+| Select | Toggle Number/Letter |
 
-## Building the pakz
+## For DEVs: building the pakz
 
 Requires `make`, `rsync`, and `zip`.
 
@@ -117,10 +101,23 @@ cd pokemmo
 make
 ```
 
-This produces `pokemmo_patch.pakz` ready to copy to the SD card.
+This produces [pokemmo/pokemmo_patch.pakz](pokemmo/pokemmo_patch.pakz) ready to copy to the SD card.
+
+## Changes from the original port
+Based on [lowlevel-1989/pokemmo-port](https://github.com/lowlevel-1989/pokemmo-port). This patch adds:
+- **NextUI integration** -- Shared userdata/log paths, and a safe temp symlink to avoid spaces breaking westonwrap.
+- **TrimUI input fixes** -- Injects udev rules and bind-mounts the udev runtime directory so libinput sees the gamepad correctly.
+- **Boot splash progress** -- Uses the NextUI splash utility to display progress during patching and launch.
+- **Brick-specific controls** -- Bundled TrimUI Brick controller map and default D-Pad mouse mode.
+- **Post-install cleanup** -- Removes duplicate Port entries created by the installer.
+- **Native overrides** -- Provides bundled native libs and LWJGL overrides for compatibility via [pokemmo/staged/lib_override](pokemmo/staged/lib_override) and [pokemmo/staged/lwjgl_override](pokemmo/staged/lwjgl_override).
+- **CredentialsAgent patch** -- Injects the CredentialsAgent hook from [pokemmo/staged/patch_template/CredentialsAgent.java](pokemmo/staged/patch_template/CredentialsAgent.java) to enable credentials-file login. This replaces the credentials.java & launcher.java class-replacement technique, which proved troublesome.
 
 ## Credits
 
-- **Porter**: lowlevel.1989
+- **Original porter**: lowlevel.1989
 - Built on [PortMaster](https://portmaster.games/)
-- [PokeMMO](https://pokemmo.com) is a fan-made MMO by the PokeMMO team
+- [PokeMMO](https://pokemmo.com)
+
+## Note
+This patch is not affiliated with the PokeMMO team or lowlevel.1989. Do not contact them for support with this patch. For issues, please open an issue on this repository.
