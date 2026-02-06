@@ -35,10 +35,11 @@ Why? To run PokeMMO on the TrimUI Brick and TrimUI Smart Pro with [NextUI](https
     - Unhide hidden folders if you can't find the .ports folder.
 3. Rename credentials.template.txt to credentials.txt.
     - Open credentials.txt and enter your PokeMMO username and password.
-4. Setup the ROMs as described [here](https://github.com/lowlevel-1989/pokemmo-port?tab=readme-ov-file#3-add-required-and-optional-roms).
-5. Copy [pokemmo_patch.pakz](https://github.com/Helaas/tg5040-nextui-pokemmo-portmaster-patch/releases) to the root of your SD card.
-6. Reboot the device. NextUI will extract the patch automatically.
-7. Launch **PokeMMO** from the Ports menu.
+4. Copy the ROMs as described [here](https://github.com/lowlevel-1989/pokemmo-port?tab=readme-ov-file#3-add-required-and-optional-roms).
+   - Adding the Black & White ROM didn't require me to edit the main.properties file. If it turns out to be required for the other ROMs, please do so after applying the patch as it wil overwrite main.properties again.
+6. Copy [pokemmo_patch.pakz](https://github.com/Helaas/tg5040-nextui-pokemmo-portmaster-patch/releases) to the root of your SD card.
+7. Reboot the device. NextUI will extract the patch automatically.
+8. Launch **PokeMMO** from the Ports menu.
 
 ## Menu options
 
