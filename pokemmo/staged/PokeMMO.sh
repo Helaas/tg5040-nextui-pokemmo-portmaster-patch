@@ -613,16 +613,11 @@ if [ -f "patch.zip" ]; then
   mv theme.xml data/mods/console_mod/console/theme.xml
   cp -rf _mods/* data/mods
   rm -rf _mods
-  for file in "$EXTRACT_DIR"/f/*.class; do
-    echo "[CHECKING] $file" >> /tmp/launch_menu.trace
-    if grep -q -a "client.ui.login.username" "$file"; then
-      echo "[MATCH] $file" >> /tmp/launch_menu.trace
-      class_name="${file%.class}"
-      class_name="${class_name#"$EXTRACT_DIR"/}"
-      class_name="${class_name//\//.}"
-      break
-    fi
-  done
+  file=$("$GAMEDIR/menu/rg" -l -a "client.ui.login.username" "$EXTRACT_DIR"/f/*.class | head -1)
+  echo "[MATCH] $file" >> /tmp/launch_menu.trace
+  class_name="${file%.class}"
+  class_name="${class_name#"$EXTRACT_DIR"/}"
+  class_name="${class_name//\//.}"
   # Build JARs on tmpfs to avoid exFAT case-insensitivity issues
   JAR_DIR="/tmp/pokemmo_jars"
   rm -rf "$JAR_DIR"

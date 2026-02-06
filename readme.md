@@ -1,4 +1,4 @@
-# PokeMMO Patch for TrimUI Brick (tg3040) & Smart Pro (tg5040)
+# PokeMMO Patch for TrimUI Brick & Smart Pro
 
 Yo dawg, I heard you like [PokeMMO](https://pokemmo.com) PortMaster patches.  
 So I patched the patch with another patch, so you can patch your PokeMMO PortMaster patch while patching your PokeMMO PortMaster patch.  
@@ -107,11 +107,15 @@ This produces [pokemmo/pokemmo_patch.pakz](pokemmo/pokemmo_patch.pakz) ready to 
 Based on [lowlevel-1989/pokemmo-port](https://github.com/lowlevel-1989/pokemmo-port). This patch adds:
 - **NextUI integration** -- Shared userdata/log paths, and a safe temp symlink to avoid spaces breaking westonwrap.
 - **TrimUI input fixes** -- Injects udev rules and bind-mounts the udev runtime directory so libinput sees the gamepad correctly.
-- **Boot splash progress** -- Uses the NextUI splash utility to display progress during patching and launch.
-- **Brick-specific controls** -- Bundled TrimUI Brick controller map and default D-Pad mouse mode.
+- **Boot splash progress** -- Uses the NextUI splash utility to display progress during launch.
 - **Post-install cleanup** -- Removes duplicate Port entries created by the installer.
 - **Native overrides** -- Provides bundled native libs and LWJGL overrides for compatibility via [pokemmo/staged/lib_override](pokemmo/staged/lib_override) and [pokemmo/staged/lwjgl_override](pokemmo/staged/lwjgl_override).
 - **CredentialsAgent patch** -- Injects the CredentialsAgent hook from [pokemmo/staged/patch_template/CredentialsAgent.java](pokemmo/staged/patch_template/CredentialsAgent.java) to enable credentials-file login. This replaces the credentials.java & launcher.java class-replacement technique, which proved troublesome.
+- **Bundled ripgrep** -- Provides a bundled version of [ripgrep](https://github.com/BurntSushi/ripgrep) for faster patching of the game files. Can patch the credentials agent class in under a minute instead of several minutes.
+
+## Known Issues
+- **Long first launch** -- The first launch of PokeMMO can take up to ~2 minutes before reaching the menu. This is expected behavior while PortMaster performs initial setup and only occurs on the first run.
+- **3D rendering glitches** -- Minor 3D issues may appear, most notably on the login screen. In-game rendering is generally fine and this has no impact on gameplay. This is caused by missing or incomplete driver support.
 
 ## Credits
 
