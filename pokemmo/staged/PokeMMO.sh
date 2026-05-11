@@ -25,7 +25,7 @@ if [ ! -L "$SAFE_GAMEDIR" ] || [ "$(readlink "$SAFE_GAMEDIR" 2>/dev/null)" != "$
   ln -s "$ORIG_GAMEDIR" "$SAFE_GAMEDIR" 2>/dev/null || true
 fi
 if [ -L "$SAFE_GAMEDIR" ]; then
-  GAMEDIR="$SAFE_GAMEDIR"
+  GAMEDIR = "$SAFE_GAMEDIR"
 fi
 
 # Setup logging - write early debug info directly to log file
@@ -49,7 +49,7 @@ elif [ -d "/opt/tools/PortMaster/" ]; then
 elif [ -d "$XDG_DATA_HOME/PortMaster/" ]; then
   controlfolder="$XDG_DATA_HOME/PortMaster"
 else
-  controlfolder="/roms/ports/PortMaster"
+  controlfolder="/mnt/SDCARD/Emus/tg5040/PORTS.pak/PortMaster"
 fi
 
 source $controlfolder/control.txt
@@ -832,7 +832,7 @@ if [ "$westonpack" -eq 1 ]; then
   export XDG_RUNTIME_DIR=/tmp/weston_runtime
 
   # Weston-specific environment (avoid inline assignments with spaces)
-  export GAMEDIR="$GAMEDIR"
+  export GAMEDIR = "$GAMEDIR"
   export XDG_DATA_HOME="$GAMEDIR"
   export WAYLAND_DISPLAY=
   export LANG=en_US.UTF-8
