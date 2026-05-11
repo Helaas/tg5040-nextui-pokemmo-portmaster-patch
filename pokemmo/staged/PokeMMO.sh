@@ -25,7 +25,7 @@ if [ ! -L "$SAFE_GAMEDIR" ] || [ "$(readlink "$SAFE_GAMEDIR" 2>/dev/null)" != "$
   ln -s "$ORIG_GAMEDIR" "$SAFE_GAMEDIR" 2>/dev/null || true
 fi
 if [ -L "$SAFE_GAMEDIR" ]; then
-  GAMEDIR = "$SAFE_GAMEDIR"
+  eval 'GAMEDIR="$SAFE_GAMEDIR"'
 fi
 
 # Setup logging - write early debug info directly to log file
@@ -832,7 +832,7 @@ if [ "$westonpack" -eq 1 ]; then
   export XDG_RUNTIME_DIR=/tmp/weston_runtime
 
   # Weston-specific environment (avoid inline assignments with spaces)
-  export GAMEDIR = "$GAMEDIR"
+  export GAMEDIR
   export XDG_DATA_HOME="$GAMEDIR"
   export WAYLAND_DISPLAY=
   export LANG=en_US.UTF-8
